@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Data Optimizer - CodeAlpha Task 1</title>
+    <style>
+        :root { --danger: #dc3545; --success: #28a745; --primary: #1a73e8; --warning: #f4b400; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 40px; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        h2 { color: #202124; margin-bottom: 5px; font-size: 24px; }
+        p.subtitle { color: #5f6368; font-size: 13px; margin-bottom: 25px; }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #e8eaed; }
+        .stat-val { font-size: 22px; font-weight: bold; color: var(--primary); }
+        .stat-label { font-size: 11px; color: #70757a; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 5px; }
+
+        .input-group { margin-bottom: 20px; }
+        input { width: 100%; padding: 14px; border: 2px solid #e8eaed; border-radius: 10px; box-sizing: border-box; font-size: 15px; transition: border-color 0.3s; outline: none; }
+        input:focus { border-color: var(--primary); }
+        
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600; transition: transform 0.1s, background 0.3s; }
+        button:active { transform: scale(0.98); }
+        button:hover { background: #1557b0; }
+
+        #message { margin-top: 20px; padding: 12px; border-radius: 8px; display: none; font-size: 14px; font-weight: 500; animation: slideIn 0.3s ease; }
+        
+        .history { margin-top: 25px; text-align: left; border-top: 1px solid #eee; padding-top: 15px; }
+        .history-title { font-size: 13px; font-weight: bold; color: #3c4043; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        #log { max-height: 180px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; font-size: 12px; border-radius: 5px; background: #fdfdfd; padding: 5px; }
+        .log-entry { padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; border-left: 3px solid transparent; }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📂 Cloud Data Optimizer</h2>
+    <p class="subtitle">Efficient Data Redundancy & Storage Management</p>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-val" id="totalEntries">0</div>
+            <div class="stat-label">Unique Entries</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val" id="savedStorage" style="color: var(--success);">0.0 KB</div>
+            <div class="stat-label">Storage Saved</div>
+        </div>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="dataInput" placeholder="Enter Email or Unique ID...">
+    </div>
+    <button onclick="syncData()">Sync to Cloud</button>
+
+    <div id="message"></div>
+
+    <div class="history">
+        <div class="history-title">
+            <span>LIVE SYNC LOGS</span>
+            <span id="syncStatus" style="color: var(--success); font-size: 10px;">● CLOUD ONLINE</span>
+        </div>
+        <div id="log"></div>
+    </div>
+</div>
+
+<script>
+    let database = new Set();
+    let totalSavedKB = 0;
+
+    function syncData() {
+        const input = document.getElementById('dataInput');
+        const msg = document.getElementById('message');
+        const val = input.value.trim().toLowerCase();
+        const log = document.getElementById('log');
+
+        if (!val) return;
+
+        msg.style.display = 'block';
+
+        // 1. Format Validation (Regex for Email)
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(val)) {
+            msg.style.background = '#fff3cd';
+            msg.style.color = '#856404';
+            msg.style.border = '1px solid #ffeeba';
+            msg.innerText = "⚠️ Invalid Format! Please use a valid Email ID.";
+            addLog(val, "INVALID", "orange");
+            return;
+        }
+
+        // 2. Redundancy Logic
+        if (database.has(val)) {
+            // REDUNDANT DATA DETECTED
+            msg.style.background = '#f8d7da';
+            msg.style.color = '#721c24';
+            msg.style.border = '1px solid #f5c6cb';
+            msg.innerText = "❌ Redundancy Detected! Entry Blocked.";
+            
+            // Increment Storage Saved (Visualizing 2.5KB saved per duplicate)
+            totalSavedKB += 2.5;
+            document.getElementById('savedStorage').innerText = totalSavedKB.toFixed(1) + " KB";
+            
+            addLog(val, "REDUNDANT", "red");
+        } else {
+            // UNIQUE DATA - SYNC SUCCESS
+            database.add(val);
+            msg.style.background = '#d4edda';
+            msg.style.color = '#155724';
+            msg.style.border = '1px solid #c3e6cb';
+            msg.innerText = "✅ Data Synced Successfully to Cloud.";
+            
+            document.getElementById('totalEntries').innerText = database.size;
+            addLog(val, "SYNCED", "green");
+        }
+
+        input.value = "";
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function addLog(data, status, color) {
+        const log = document.getElementById('log');
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        log.innerHTML += `<div class="log-entry" style="border-left-color: ${color}; background: ${color === 'red' ? '#fff5f5' : (color === 'green' ? '#f6fff8' : '#fffcf0')}">
+            <span style="color: gray;">[${time}]</span> <strong>${status}:</strong> ${data}
+        </div>`;
+    }
+</script>
+
+</body>
+</html>
